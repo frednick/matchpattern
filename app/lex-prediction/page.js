@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import '../predictions.css';
+import '../predictions/predictions.css';
 import './lex.css';
 
 const starter = {
@@ -22,7 +22,6 @@ function buildPrediction(previousResult, nextHome, nextAway) {
   const first = Number(String(previousResult).split(/[-:]/)[0]);
   const second = Number(String(previousResult).split(/[-:]/)[1]);
   const over15 = goals !== null && goals >= 2;
-  const over05 = goals !== null && goals >= 1;
   const both = goals !== null && first > 0 && second > 0;
 
   if (nextHome.toLowerCase().includes('manchester united')) {
