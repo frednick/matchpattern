@@ -12,7 +12,7 @@ function canonical(name=''){
     heerenveen:'SC Heerenveen',telstar:'SC Telstar',psv:'PSV Eindhoven',ajaxamsterdam:'Ajax',brugge:'Club Brugge',
     antwerp:'Royal Antwerp FC',unionstgilloise:'Union Gilloise',uniongilloise:'Union Gilloise',westerlo:'KVC Westerlo',
     waregem:'SV Zulte Waregem',rennes:'Rennes',marseille:'Marseille',strasbourg:'Strasbourg',monaco:'Monaco',
-    celta:'Celta',celtaigo:'Celta',malaga:'Malaga CF',getafe:'Getafe',deportivolacoruna:'RC Deportivo De La Coruna',
+    celta:'Celta',malaga:'Malaga CF',getafe:'Getafe',deportivolacoruna:'RC Deportivo De La Coruna',
     rcdeportivodelacoruna:'RC Deportivo De La Coruna',realmadrid:'Real Madrid',rayovallecano:'Rayo Vallecano',
     lazio:'Lazio',acmilan:'AC Milan',atalanta:'Atalanta',cagliari:'Cagliari',werderbremen:'Werder Bremen',
     unionberlin:'Union Berlin',crystalpalace:'Crystal Palace',ipswichtown:'Ipswich Town',sunderland:'Sunderland AFC',
@@ -23,12 +23,11 @@ function canonical(name=''){
     kvmechelen:'Yellow-Red KV Mechelen',cerclebrugge:'Cercle Brugge',athleticbilbao:'Athletic Bilbao',
     atleticoadrid:'Atletico Madrid',brighton:'Brighton',brentford:'Brentford',bournemouth:'Bournemouth',
     coventrycity:'Coventry City',nacionaldamadeira:'Nacional da Madeira',fiorentina:'Fiorentina',torino:'Torino',
-    udinese:'Udinese',napoli:'Napoli',inter:'Inter',everton:'Everton',rangers:'Rangers',ang ers:'Angers'.replace(' ',''),
-    angers:'Angers',alkmaar:'Alkmaar',excelsiorrotterdam:'Excelsior Rotterdam',groningen:'FC Groningen',
-    necni jmegen:'NEC Nijmegen'.replace(' ',''),necnijmegen:'NEC Nijmegen',paderborn:'Paderborn',
-    eintrachtfrankfurt:'Eintracht Frankfurt',borussiadortmund:'Borussia Dortmund',villarreal:'Villarreal',
-    parisfc:'Paris FC',nice:'Nice',fulham:'Fulham',valencia:'Valencia',le mans fc:'Le Mans FC'.replace(' ',''),
-    le mansfc:'Le Mans FC'.replace(' ',''),realmadird:'Real Madrid',rscanderlecht:'RSC Anderlecht'
+    udinese:'Udinese',napoli:'Napoli',inter:'Inter',everton:'Everton',rangers:'Rangers',angers:'Angers',
+    alkmaar:'Alkmaar',excelsiorrotterdam:'Excelsior Rotterdam',groningen:'FC Groningen',necnijmegen:'NEC Nijmegen',
+    paderborn:'Paderborn',eintrachtfrankfurt:'Eintracht Frankfurt',borussiadortmund:'Borussia Dortmund',
+    villarreal:'Villarreal',parisfc:'Paris FC',nice:'Nice',fulham:'Fulham',valencia:'Valencia',lemansfc:'Le Mans FC',
+    rscanderlecht:'RSC Anderlecht'
   };
   return aliases[normalize(name)]||name;
 }
@@ -47,13 +46,13 @@ const ALL_EVIDENCE = [...FOUNDATION,...LATEST];
 function marketWon(e){
   const total=e.homeScore+e.awayScore;
   const p=e.pick||''; const m=e.market||'';
+  if(/Home Team or Over 2\.5/i.test(m)) return e.homeScore>e.awayScore||total>=3;
+  if(/Away or Over 2\.5/i.test(m)) return e.awayScore>e.homeScore||total>=3;
   if(/Over 2\.5/i.test(p)||/Over 2\.5/i.test(m)) return total>=3;
   if(/Over 1\.5/i.test(p)||/Over 1\.5/i.test(m)) return total>=2;
   if(/Over 0\.5/i.test(p)||/Over 0\.5/i.test(m)) return total>=1;
   if(/^Home$/i.test(p)||/^Home$/i.test(m)) return e.homeScore>e.awayScore;
-  if(/Away/i.test(p)||/Away/i.test(m)) return e.awayScore>e.homeScore;
-  if(/Home Team or Over 2\.5/i.test(m)) return e.homeScore>e.awayScore||total>=3;
-  if(/Away or Over 2\.5/i.test(m)) return e.awayScore>e.homeScore||total>=3;
+  if(/^Away$/i.test(p)||/^Away$/i.test(m)) return e.awayScore>e.homeScore;
   return String(e.result||'').toLowerCase()!=='no';
 }
 
@@ -80,7 +79,6 @@ function buildProfiles(){
   return profiles;
 }
 const PROFILES=buildProfiles();
-
 function profileFor(name){return PROFILES[canonical(name)]||null;}
 function profileScore(p){return p?(p.recentRate*0.65+p.hitRate*0.35)+Math.min(p.sample,10):0;}
 function bestProfile(home,away){const candidates=[profileFor(home),profileFor(away)].filter(Boolean);return candidates.sort((a,b)=>profileScore(b)-profileScore(a))[0]||null;}
@@ -96,7 +94,7 @@ function signalFor(home,away){
 function sourceFor(home,away){
   const ps=[profileFor(home),profileFor(away)].filter(Boolean);
   if(!ps.length)return 'No dataset evidence';
-  return ps.map(p=>`${p.club} ${p.recentRate}% (${p.sample} samples)`).join(' / ');
+  return ps.map(p=>`${p.club} ${p.recentRate}% recent / ${p.hitRate}% overall`).join(' • ');
 }
 function lastResultFor(name){const p=profileFor(name);const e=p?.latest;return e?`${e.homeScore}-${e.awayScore}`:null;}
 
