@@ -22,35 +22,32 @@ function canonical(name=''){
 function patternFor(home,away){const h=canonical(home),a=canonical(away);return CLUB_PATTERNS[h]||CLUB_PATTERNS[a]||'Pattern review'}
 function sourceFor(home,away){const hits=[canonical(home),canonical(away)].filter(t=>CLUB_PATTERNS[t]);return hits.length?`${hits.join(' / ')} pattern`:'Club pattern review'}
 function signalFor(pattern,last){
-  if(!last)return 'Cautious';
-  const total=last.homeScore+last.awayScore;
-  const homeWon=last.homeScore>last.awayScore;
-  if(pattern==='Home') return homeWon?'Strong':'Cautious';
-  if(pattern==='Over 0.5') return total>=1?'Strong':'Cautious';
-  if(pattern==='Over 1.5') return total>=2?'Strong':'Balanced';
-  if(pattern==='Over 2.5') return total>=3?'Strong':'Balanced';
-  if(pattern.includes('Home Team')) return homeWon||total>=3?'Strong':'Balanced';
-  if(pattern.includes('Away')) return !homeWon||total>=3?'Strong':'Balanced';
-  return total>=2?'Balanced':'Cautious';
+  if(!last)return 'Cautious'; const total=last.homeScore+last.awayScore, homeWon=last.homeScore>last.awayScore;
+  if(pattern==='Home') return homeWon?'Strong':'Cautious'; if(pattern==='Over 0.5') return total>=1?'Strong':'Cautious'; if(pattern==='Over 1.5') return total>=2?'Strong':'Balanced'; if(pattern==='Over 2.5') return total>=3?'Strong':'Balanced';
+  if(pattern.includes('Home Team')) return homeWon||total>=3?'Strong':'Balanced'; if(pattern.includes('Away')) return !homeWon||total>=3?'Strong':'Balanced'; return total>=2?'Balanced':'Cautious';
 }
 async function fetchLeague(league,from,to){try{const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard?dates=${from}-${to}&limit=500`,{next:{revalidate:900}});if(!r.ok)return [];const d=await r.json();return d.events||[]}catch{return []}}
-function mapEvent(event){const cs=event.competitions?.[0]?.competitors||[];const h=cs.find(x=>x.homeAway==='home'),a=cs.find(x=>x.homeAway==='away');if(!h||!a)return null;const home=canonical(h.team?.displayName||''),away=canonical(a.team?.displayName||'');if(!CLUB_PATTERNS[home]&&!CLUB_PATTERNS[away])return null;const hs=Number(h.score),as=Number(a.score);return{id:String(event.id),date:new Date(event.date).toISOString(),home,away,homeScore:Number.isFinite(hs)?hs:null,awayScore:Number.isFinite(as)?as:null,completed:event.status?.type?.completed===true||Number.isFinite(hs)&&Number.isFinite(as)}}
+function mapEvent(event){const cs=event.competitions?.[0]?.competitors||[],h=cs.find(x=>x.homeAway==='home'),a=cs.find(x=>x.homeAway==='away');if(!h||!a)return null;const home=canonical(h.team?.displayName||''),away=canonical(a.team?.displayName||'');const hs=Number(h.score),as=Number(a.score);return{id:String(event.id),date:new Date(event.date).toISOString(),home,away,homeScore:Number.isFinite(hs)?hs:null,awayScore:Number.isFinite(as)?as:null,completed:event.status?.type?.completed===true||Number.isFinite(hs)&&Number.isFinite(as)}}
 const fmtDate=d=>d.toISOString().slice(0,10).replaceAll('-','');
+const labelTime=date=>({dateLabel:new Date(date).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',timeZone:'Africa/Lagos'}),time:new Date(date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Africa/Lagos')});
 
 export async function GET(){
   const now=new Date();
   const friday=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+((5-now.getUTCDay()+7)%7||7)));
   const sunday=new Date(friday); sunday.setUTCDate(friday.getUTCDate()+2);
+  const futureTo=new Date(friday); futureTo.setUTCDate(friday.getUTCDate()+9);
   const recentFrom=new Date(now); recentFrom.setUTCDate(now.getUTCDate()-8);
-  const [recentRaw,nextRaw]=await Promise.all([
+  const [recentRaw,futureRaw]=await Promise.all([
     Promise.all(LEAGUES.map(l=>fetchLeague(l,fmtDate(recentFrom),fmtDate(now)))),
-    Promise.all(LEAGUES.map(l=>fetchLeague(l,fmtDate(friday),fmtDate(sunday))))
+    Promise.all(LEAGUES.map(l=>fetchLeague(l,fmtDate(friday),fmtDate(futureTo))))
   ]);
   const recent=recentRaw.flat().map(mapEvent).filter(Boolean).filter(m=>m.homeScore!==null&&m.awayScore!==null).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const upcoming=nextRaw.flat().map(mapEvent).filter(Boolean).filter(m=>m.homeScore===null&&m.awayScore===null).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const lastByClub={};
-  for(const m of recent){if(!lastByClub[m.home])lastByClub[m.home]=m;if(!lastByClub[m.away])lastByClub[m.away]=m}
-  const matches=upcoming.map(m=>{const pattern=patternFor(m.home,m.away);const last=lastByClub[canonical(m.home)]||lastByClub[canonical(m.away)];return{...m,dateLabel:new Date(m.date).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',timeZone:'Africa/Lagos'}),time:new Date(m.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Africa/Lagos'}),prediction:pattern,source:sourceFor(m.home,m.away),signal:signalFor(pattern,last),lastResult:last?`${last.homeScore}-${last.awayScore}`:null,lastMatch:last?`${last.home} ${last.homeScore}-${last.awayScore} ${last.away}`:null}});
-  const recentReview=recent.slice(0,30).map(m=>({...m,dateLabel:new Date(m.date).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',timeZone:'Africa/Lagos'}),time:new Date(m.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Africa/Lagos'}),result:`${m.homeScore}-${m.awayScore}`}));
-  return NextResponse.json({generatedAt:now.toISOString(),window:{from:friday.toISOString(),to:sunday.toISOString()},matches,recentReview,trackedClubs:Object.keys(CLUB_PATTERNS),provider:'ESPN public soccer schedule feed'},{headers:{'Cache-Control':'no-store'}});
+  const future=futureRaw.flat().map(mapEvent).filter(Boolean).filter(m=>m.homeScore===null&&m.awayScore===null).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const upcoming=future.filter(m=>new Date(m.date)<=sunday);
+  const lastByClub={}; for(const m of recent){if(!lastByClub[m.home])lastByClub[m.home]=m;if(!lastByClub[m.away])lastByClub[m.away]=m}
+  const decorate=m=>{const pattern=patternFor(m.home,m.away),last=lastByClub[canonical(m.home)]||lastByClub[canonical(m.away)],lt=labelTime(m.date);return{...m,...lt,prediction:pattern,source:sourceFor(m.home,m.away),signal:signalFor(pattern,last),lastResult:last?`${last.homeScore}-${last.awayScore}`:null,lastMatch:last?`${last.home} ${last.homeScore}-${last.awayScore} ${last.away}`:null,tracked:Boolean(CLUB_PATTERNS[canonical(m.home)]||CLUB_PATTERNS[canonical(m.away)])}};
+  const matches=upcoming.filter(m=>CLUB_PATTERNS[m.home]||CLUB_PATTERNS[m.away]).map(decorate);
+  const futureMatches=future.map(decorate);
+  const recentReview=recent.slice(0,30).map(m=>({...m,...labelTime(m.date),result:`${m.homeScore}-${m.awayScore}`}));
+  return NextResponse.json({generatedAt:now.toISOString(),window:{from:friday.toISOString(),to:sunday.toISOString()},matches,recentReview,futureMatches,trackedClubs:Object.keys(CLUB_PATTERNS),provider:'ESPN public soccer schedule feed'},{headers:{'Cache-Control':'no-store'}});
 }
