@@ -1,39 +1,229 @@
 'use client';
+
 import { useEffect, useMemo, useState } from 'react';
 import '../predictions.css';
 
 const LOCAL_FIXTURES = [
- {id:'local-1',dateLabel:'Fri, 11 Sep',time:'19:45',home:'Rennes',away:'Marseille'},
- {id:'local-2',dateLabel:'Sat, 12 Sep',time:'15:00',home:'Chelsea',away:'Hull City'},
- {id:'local-3',dateLabel:'Sat, 12 Sep',time:'20:00',home:'Sunderland AFC',away:'Arsenal'},
- {id:'local-4',dateLabel:'Sat, 12 Sep',time:'14:30',home:'Augsburg',away:'Bayer Leverkusen'},
- {id:'local-5',dateLabel:'Sat, 12 Sep',time:'14:30',home:'Borussia Dortmund',away:'Paderborn'},
- {id:'local-6',dateLabel:'Sat, 12 Sep',time:'14:30',home:'Freiburg',away:'Borussia Monchengladbach'},
- {id:'local-7',dateLabel:'Sat, 12 Sep',time:'16:30',home:'1. FC Cologne',away:'Werder Bremen'},
- {id:'local-8',dateLabel:'Sat, 12 Sep',time:'16:00',home:'Atalanta',away:'Cagliari'},
- {id:'local-9',dateLabel:'Sat, 12 Sep',time:'15:15',home:'Strasbourg',away:'Monaco'},
- {id:'local-10',dateLabel:'Sat, 12 Sep',time:'19:00',home:'Paris FC',away:'Lyon'},
- {id:'local-11',dateLabel:'Sun, 13 Sep',time:'14:00',home:'Coventry City',away:'Brighton'},
- {id:'local-12',dateLabel:'Sun, 13 Sep',time:'16:30',home:'Man Utd',away:'Man City'},
- {id:'local-13',dateLabel:'Sun, 13 Sep',time:'15:00',home:'Celta',away:'Malaga CF'},
- {id:'local-14',dateLabel:'Sun, 13 Sep',time:'17:15',home:'Getafe',away:'RC Deportivo De La Coruna'},
- {id:'local-15',dateLabel:'Sun, 13 Sep',time:'19:45',home:'Lazio',away:'AC Milan'},
- {id:'local-16',dateLabel:'Sun, 13 Sep',time:'17:00',home:'Napoli',away:'Bologna'},
- {id:'local-17',dateLabel:'Sun, 13 Sep',time:'17:00',home:'Torino',away:'Roma'},
+  { id: 'local-1', dateLabel: 'Fri, 11 Sep', time: '19:45', home: 'Rennes', away: 'Marseille' },
+  { id: 'local-2', dateLabel: 'Sat, 12 Sep', time: '15:00', home: 'Chelsea', away: 'Hull City' },
+  { id: 'local-3', dateLabel: 'Sat, 12 Sep', time: '20:00', home: 'Sunderland AFC', away: 'Arsenal' },
+  { id: 'local-4', dateLabel: 'Sat, 12 Sep', time: '14:30', home: 'Augsburg', away: 'Bayer Leverkusen' },
+  { id: 'local-5', dateLabel: 'Sat, 12 Sep', time: '14:30', home: 'Borussia Dortmund', away: 'Paderborn' },
+  { id: 'local-6', dateLabel: 'Sat, 12 Sep', time: '14:30', home: 'Freiburg', away: 'Borussia Monchengladbach' },
+  { id: 'local-7', dateLabel: 'Sat, 12 Sep', time: '16:30', home: '1. FC Cologne', away: 'Werder Bremen' },
+  { id: 'local-8', dateLabel: 'Sat, 12 Sep', time: '16:00', home: 'Atalanta', away: 'Cagliari' },
+  { id: 'local-9', dateLabel: 'Sat, 12 Sep', time: '15:15', home: 'Strasbourg', away: 'Monaco' },
+  { id: 'local-10', dateLabel: 'Sat, 12 Sep', time: '19:00', home: 'Paris FC', away: 'Lyon' },
+  { id: 'local-11', dateLabel: 'Sun, 13 Sep', time: '14:00', home: 'Coventry City', away: 'Brighton' },
+  { id: 'local-12', dateLabel: 'Sun, 13 Sep', time: '16:30', home: 'Man Utd', away: 'Man City' },
+  { id: 'local-13', dateLabel: 'Sun, 13 Sep', time: '15:00', home: 'Celta', away: 'Malaga CF' },
+  { id: 'local-14', dateLabel: 'Sun, 13 Sep', time: '17:15', home: 'Getafe', away: 'RC Deportivo De La Coruna' },
+  { id: 'local-15', dateLabel: 'Sun, 13 Sep', time: '19:45', home: 'Lazio', away: 'AC Milan' },
+  { id: 'local-16', dateLabel: 'Sun, 13 Sep', time: '17:00', home: 'Napoli', away: 'Bologna' },
+  { id: 'local-17', dateLabel: 'Sun, 13 Sep', time: '17:00', home: 'Torino', away: 'Roma' },
 ];
 
-export default function WeekendPredictionsPage(){
- const [matches,setMatches]=useState([]); const [futureMatches,setFutureMatches]=useState([]); const [recent,setRecent]=useState([]); const [generatedAt,setGeneratedAt]=useState(null); const [loading,setLoading]=useState(true); const [search,setSearch]=useState(''); const [filter,setFilter]=useState('All'); const [futureSearch,setFutureSearch]=useState('');
- useEffect(()=>{fetch('/api/weekend',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(data=>{setMatches(data.matches||[]);setFutureMatches(data.futureMatches||[]);setRecent(data.recentReview||[]);setGeneratedAt(data.generatedAt)}).catch(()=>{}).finally(()=>setLoading(false))},[]);
- const fallbackCards=useMemo(()=>LOCAL_FIXTURES.map((m)=>({...m,signal:'Cautious',prediction:'Pattern review',tracked:true,lastResult:null,source:'MatchPattern historical evidence',evidence:{sample:0}})),[]);
- const boardMatches=matches.length?matches:futureMatches.filter(m=>m.tracked).length?futureMatches.filter(m=>m.tracked):fallbackCards;
- const filtered=useMemo(()=>boardMatches.filter(m=>`${m.home} ${m.away}`.toLowerCase().includes(search.toLowerCase())).filter(m=>filter==='All'||m.signal===filter),[boardMatches,search,filter]);
- const futureFiltered=useMemo(()=>{const source=futureMatches.length?futureMatches:LOCAL_FIXTURES;return source.filter(m=>`${m.home} ${m.away}`.toLowerCase().includes(futureSearch.toLowerCase()))},[futureMatches,futureSearch]);
- const strong=boardMatches.filter(m=>m.signal==='Strong').length;
- return <main className="predictor-shell weekend-pro"><header className="predictor-header"><a className="brand" href="/predictions/weekend">Match<span>Pattern</span></a><nav><a className="active" href="/predictions/weekend">Next Weekend</a><a href="/lex-prediction">Lex's Prediction</a><a href="/predictions">History</a></nav><div className="header-pill">LIVE BOARD ⚽</div></header>
- <section className="hero pro-hero"><div className="hero-copy"><div className="eyebrow">MATCHPATTERN • WEEKEND INTELLIGENCE</div><h1>Next weekend.<br/><span>Read the pattern.</span></h1><p>Fresh fixtures are combined with the concluded weekend, the MatchPattern history library and the latest available result for each tracked club. The goal is a transparent signal — not a promise.</p><div className="hero-actions"><a href="#future" className="primary-btn">View future matches ↓</a><a href="/lex-prediction" className="secondary-btn hero-secondary">Open Lex's engine →</a></div><div className="live-line"><span className="live-dot"/> DATA FEED ACTIVE <span>•</span> {loading?'Refreshing fixtures…':`${futureFiltered.length} future fixtures loaded`}</div></div><div className="hero-card intelligence-card"><div className="card-top"><span>WEEKEND SIGNAL</span><strong>{strong} STRONG</strong></div><div className="big-number">{boardMatches.length}</div><small>tracked fixtures</small><div className="mini-grid"><div><b>{futureFiltered.length}</b><span>future matches</span></div><div><b>{recent.length}</b><span>recent results</span></div></div></div></section>
- <section id="future" className="future-section pro-section"><div className="section-heading"><div><div className="eyebrow">UPCOMING FIXTURES • LIVE DATA</div><h2>Next future matches</h2><p className="section-subtitle">Every upcoming fixture found in the connected leagues. Tracked matches are marked for Lex analysis.</p></div><span className="data-note">{futureFiltered.length} matches</span></div><div className="future-toolbar"><input value={futureSearch} onChange={e=>setFutureSearch(e.target.value)} placeholder="Search any club…" aria-label="Search future matches"/><span>Auto-updated from the football feed</span></div><div className="future-list">{futureFiltered.map((m,i)=><article className={`future-match ${m.tracked?'tracked':''}`} key={m.id}><div className="future-index">{String(i+1).padStart(2,'0')}</div><div className="future-date"><b>{m.dateLabel}</b><span>{m.time} WAT</span></div><div className="future-teams"><strong>{m.home}</strong><span>vs</span><strong>{m.away}</strong></div><div className="future-status">{m.tracked?<><span className={`signal ${m.signal?.toLowerCase()||'cautious'}`}>{m.signal||'Cautious'}</span><small>LEX ANALYSIS READY</small></>:<small>FIXTURE</small>}</div></article>)}</div>{!futureFiltered.length&&<div className="empty">No future fixture matches your search.</div>}</section>
- <section className="review-strip"><div className="review-title"><div className="eyebrow">LAST WEEKEND</div><h2>What just happened</h2><p>Recent results now feed the next-match signal.</p></div><div className="review-scroll">{recent.slice(0,8).map(m=><div className="review-card" key={m.id}><span>{m.dateLabel}</span><b>{m.home}</b><strong>{m.result}</strong><b>{m.away}</b></div>)}</div></section>
- <section id="weekend" className="matches-section pro-section"><div className="section-heading"><div><div className="eyebrow">NEXT WEEKEND • 11–13 SEP</div><h2>Lex prediction board</h2></div><span className="data-note">{generatedAt?`Updated ${new Date(generatedAt).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'})`:'Loading…'}</span></div><div className="board-toolbar"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search a club…" aria-label="Search club"/><div className="filter-pills">{['All','Strong','Balanced','Cautious'].map(x=><button key={x} className={filter===x?'selected':''} onClick={()=>setFilter(x)}>{x}</button>)}</div></div><div className="prediction-cards">{filtered.map((m,i)=><article className="match-card" key={m.id}><div className="match-top"><span>#{String(i+1).padStart(2,'0')} • {m.dateLabel} {m.time}</span><span className={`signal ${m.signal?.toLowerCase()||'cautious'}`}>{m.signal||'Cautious'}</span></div><div className="match-main"><div><b>{m.home}</b><small>HOME</small></div><div className="versus">VS</div><div className="away"><b>{m.away}</b><small>AWAY</small></div></div><div className="pick-box"><span>LEX / PATTERN PICK</span><strong>{m.prediction||'Pattern review'}</strong></div><div className="match-foot"><span>Latest signal: {m.lastResult||'No recent result'}</span><span>{m.source||'MatchPattern historical evidence'}</span></div></article>)}</div>{!filtered.length&&<div className="empty">No tracked fixture matches your filters.</div>}</section>
- <section className="method pro-method"><div><div className="eyebrow">THE ENGINE</div><h2>Results → patterns → next fixtures.</h2></div><div className="method-grid"><p><b>01 • REVIEW</b><br/>The concluded weekend is captured and shown openly.</p><p><b>02 • COMPARE</b><br/>Recent results are compared with the historical market pattern.</p><p><b>03 • SIGNAL</b><br/>Each fixture gets a Strong, Balanced or Cautious signal.</p></div></section><footer><b>MatchPattern</b><span>Lex's Prediction Engine</span><span>•</span><span>Analysis and entertainment only. No result is guaranteed.</span></footer></main>
+export default function WeekendPredictionsPage() {
+  const [matches, setMatches] = useState([]);
+  const [futureMatches, setFutureMatches] = useState([]);
+  const [recent, setRecent] = useState([]);
+  const [generatedAt, setGeneratedAt] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('All');
+  const [futureSearch, setFutureSearch] = useState('');
+
+  useEffect(() => {
+    fetch('/api/weekend', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error('Weekend feed failed'))))
+      .then((data) => {
+        setMatches(data.matches || []);
+        setFutureMatches(data.futureMatches || []);
+        setRecent(data.recentReview || []);
+        setGeneratedAt(data.generatedAt || null);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const fallbackCards = useMemo(
+    () =>
+      LOCAL_FIXTURES.map((match) => ({
+        ...match,
+        signal: 'Cautious',
+        prediction: 'Pattern review',
+        tracked: true,
+        lastResult: null,
+        source: 'MatchPattern historical evidence',
+        evidence: { sample: 0 },
+      })),
+    []
+  );
+
+  const boardMatches =
+    matches.length > 0
+      ? matches
+      : futureMatches.filter((match) => match.tracked).length > 0
+        ? futureMatches.filter((match) => match.tracked)
+        : fallbackCards;
+
+  const filtered = useMemo(
+    () =>
+      boardMatches
+        .filter((match) => `${match.home} ${match.away}`.toLowerCase().includes(search.toLowerCase()))
+        .filter((match) => filter === 'All' || match.signal === filter),
+    [boardMatches, search, filter]
+  );
+
+  const futureFiltered = useMemo(() => {
+    const source = futureMatches.length > 0 ? futureMatches : LOCAL_FIXTURES;
+    return source.filter((match) =>
+      `${match.home} ${match.away}`.toLowerCase().includes(futureSearch.toLowerCase())
+    );
+  }, [futureMatches, futureSearch]);
+
+  const strong = boardMatches.filter((match) => match.signal === 'Strong').length;
+
+  return (
+    <main className="predictor-shell weekend-pro">
+      <header className="predictor-header">
+        <a className="brand" href="/predictions/weekend">
+          Match<span>Pattern</span>
+        </a>
+        <nav>
+          <a className="active" href="/predictions/weekend">Next Weekend</a>
+          <a href="/lex-prediction">Lex&apos;s Prediction</a>
+          <a href="/predictions">History</a>
+        </nav>
+        <div className="header-pill">LIVE BOARD ⚽</div>
+      </header>
+
+      <section className="hero pro-hero">
+        <div className="hero-copy">
+          <div className="eyebrow">MATCHPATTERN • WEEKEND INTELLIGENCE</div>
+          <h1>Next weekend.<br /><span>Read the pattern.</span></h1>
+          <p>
+            Fresh fixtures are combined with the concluded weekend, the MatchPattern history library and the latest
+            available result for each tracked club. The goal is a transparent signal — not a promise.
+          </p>
+          <div className="hero-actions">
+            <a href="#future" className="primary-btn">View future matches ↓</a>
+            <a href="/lex-prediction" className="secondary-btn hero-secondary">Open Lex&apos;s engine →</a>
+          </div>
+          <div className="live-line">
+            <span className="live-dot" /> DATA FEED ACTIVE <span>•</span>{' '}
+            {loading ? 'Refreshing fixtures…' : `${futureFiltered.length} future fixtures loaded`}
+          </div>
+        </div>
+        <div className="hero-card intelligence-card">
+          <div className="card-top"><span>WEEKEND SIGNAL</span><strong>{strong} STRONG</strong></div>
+          <div className="big-number">{boardMatches.length}</div>
+          <small>tracked fixtures</small>
+          <div className="mini-grid">
+            <div><b>{futureFiltered.length}</b><span>future matches</span></div>
+            <div><b>{recent.length}</b><span>recent results</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="future" className="future-section pro-section">
+        <div className="section-heading">
+          <div>
+            <div className="eyebrow">UPCOMING FIXTURES • LIVE DATA</div>
+            <h2>Next future matches</h2>
+            <p className="section-subtitle">Every upcoming fixture found in the connected leagues. Tracked matches are marked for Lex analysis.</p>
+          </div>
+          <span className="data-note">{futureFiltered.length} matches</span>
+        </div>
+        <div className="future-toolbar">
+          <input value={futureSearch} onChange={(event) => setFutureSearch(event.target.value)} placeholder="Search any club…" aria-label="Search future matches" />
+          <span>Auto-updated from the football feed</span>
+        </div>
+        <div className="future-list">
+          {futureFiltered.map((match, index) => (
+            <article className={`future-match ${match.tracked ? 'tracked' : ''}`} key={match.id}>
+              <div className="future-index">{String(index + 1).padStart(2, '0')}</div>
+              <div className="future-date"><b>{match.dateLabel}</b><span>{match.time} WAT</span></div>
+              <div className="future-teams"><strong>{match.home}</strong><span>vs</span><strong>{match.away}</strong></div>
+              <div className="future-status">
+                {match.tracked ? (
+                  <>
+                    <span className={`signal ${match.signal?.toLowerCase() || 'cautious'}`}>{match.signal || 'Cautious'}</span>
+                    <small>LEX ANALYSIS READY</small>
+                  </>
+                ) : <small>FIXTURE</small>}
+              </div>
+            </article>
+          ))}
+        </div>
+        {!futureFiltered.length && <div className="empty">No future fixture matches your search.</div>}
+      </section>
+
+      <section className="review-strip">
+        <div className="review-title">
+          <div className="eyebrow">LAST WEEKEND</div>
+          <h2>What just happened</h2>
+          <p>Recent results now feed the next-match signal.</p>
+        </div>
+        <div className="review-scroll">
+          {recent.slice(0, 8).map((match) => (
+            <div className="review-card" key={match.id}>
+              <span>{match.dateLabel}</span><b>{match.home}</b><strong>{match.result}</strong><b>{match.away}</b>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="weekend" className="matches-section pro-section">
+        <div className="section-heading">
+          <div><div className="eyebrow">NEXT WEEKEND • 11–13 SEP</div><h2>Lex prediction board</h2></div>
+          <span className="data-note">
+            {generatedAt ? `Updated ${new Date(generatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}` : 'Loading…'}
+          </span>
+        </div>
+        <div className="board-toolbar">
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search a club…" aria-label="Search club" />
+          <div className="filter-pills">
+            {['All', 'Strong', 'Balanced', 'Cautious'].map((option) => (
+              <button key={option} className={filter === option ? 'selected' : ''} onClick={() => setFilter(option)}>{option}</button>
+            ))}
+          </div>
+        </div>
+        <div className="prediction-cards">
+          {filtered.map((match, index) => (
+            <article className="match-card" key={match.id}>
+              <div className="match-top">
+                <span>#{String(index + 1).padStart(2, '0')} • {match.dateLabel} {match.time}</span>
+                <span className={`signal ${match.signal?.toLowerCase() || 'cautious'}`}>{match.signal || 'Cautious'}</span>
+              </div>
+              <div className="match-main">
+                <div><b>{match.home}</b><small>HOME</small></div>
+                <div className="versus">VS</div>
+                <div className="away"><b>{match.away}</b><small>AWAY</small></div>
+              </div>
+              <div className="pick-box"><span>LEX / PATTERN PICK</span><strong>{match.prediction || 'Pattern review'}</strong></div>
+              <div className="match-foot">
+                <span>Latest signal: {match.lastResult || 'No recent result'}</span>
+                <span>{match.source || 'MatchPattern historical evidence'}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+        {!filtered.length && <div className="empty">No tracked fixture matches your filters.</div>}
+      </section>
+
+      <section className="method pro-method">
+        <div><div className="eyebrow">THE ENGINE</div><h2>Results → patterns → next fixtures.</h2></div>
+        <div className="method-grid">
+          <p><b>01 • REVIEW</b><br />The concluded weekend is captured and shown openly.</p>
+          <p><b>02 • COMPARE</b><br />Recent results are compared with the historical market pattern.</p>
+          <p><b>03 • SIGNAL</b><br />Each fixture gets a Strong, Balanced or Cautious signal.</p>
+        </div>
+      </section>
+
+      <footer>
+        <b>MatchPattern</b><span>Lex&apos;s Prediction Engine</span><span>•</span><span>Analysis and entertainment only. No result is guaranteed.</span>
+      </footer>
+    </main>
+  );
 }
